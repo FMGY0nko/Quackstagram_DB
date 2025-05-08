@@ -1,0 +1,476 @@
+@startuml
+class AuthenticationController {
+    - credDB : Database<User>
+    - userDB : Database<User>
+    - profilePicDB : Database<ProfilePhotoData>
+    - authService : IAuthenticationService
+    + AuthenticationController(credDB:Database<User>, userDB:Database<User>, profilePicDB:Database<ProfilePhotoData>, authService:IAuthenticationService)
+    + AuthenticationController()
+    + verifyCredentials(username:String, password:String) : VerificationResult
+    + saveProfilePicture(file:File, username:String) : void
+    + saveCredentials(username:String, password:String, bio:String) : void
+    + doesUsernameExist(username:String) : boolean
+    - userNamePredicate(t:User, username:String) : boolean
+}
+AuthenticationController -- IAuthenticationService
+AuthenticationController -- Database
+AuthenticationController --> User : uses
+AuthenticationController --> ProfilePhotoData : uses
+AuthenticationController --> VerificationResult : passes on
+
+class AuthenticationService implements IAuthenticationService{
+    - credDB : Database<User>
+    - userDB : Database<User>
+    + AuthenticationService(credDB:Database<User>, userDB:Database<User>)
+    + registerUser(username:String, bio:String, password:String) : void
+    + loginUser(username:String, password:String) : VerificationResult
+    - saveUserInformation(user:User) : void
+    - credentialsPredicate(t:User, username:String, password:String) : boolean
+}
+
+AuthenticationService -- Database
+AuthenticationService --> User : uses
+AuthenticationService --> VerificationResult : generates
+
+class AuthenticationView extends JFrame{
+    - WIDTH : int
+    - HEIGHT : int
+    # controller : AuthenticationController
+    + AuthenticationView()
+    - initializeUI() : void
+    # {abstract} createInfoFormComponents() : Component[]
+    # {abstract} createActionButton() : JButton
+    # {abstract} createButtonToNavigateToAlternativeAuthenticationView() : JButton
+}
+AuthenticationView -- AuthenticationController : delegates to
+abstract class Database<Model> {
+    - models : List<Model>
+    + Database()
+    # {abstract} retrieveAll() : List<Model>
+    + {abstract} save(m:Model) : boolean
+    + getMatching(filter:Predicate<Model>) : List<Model>
+    # {abstract} loadPath() : void
+}
+
+class CredentialsDatabase extends Database{
+    - credentialsFilePath : String
+    + CredentialsDatabase()
+    + retrieveAll() : List<User>
+    + save(u:User) : boolean
+    # loadPath() : void
+}
+
+CredentialsDatabase --> User : generates
+
+class ExploreController {
+    - uploadedImageDataBase : Database<SimplePicture>
+    - detailedImagDatabase : Database<Picture>
+    - credDB : Database<User>
+    + ExploreController(credDb:Database<User>, uploadedImageDb:Database<SimplePicture>, detailedImageDb:Database<Picture>, usersDb:Database<User>)
+    + ExploreController()
+    + getAllUploadedImages(username:String) : List<SimplePicture>
+    + getPictureWithId(imageId:String) : Picture
+    + doesUsernameExist(username:String) : User
+    - picIDMatchingPredicate(t:Picture, imageId:String) : boolean
+    - isUsernamePartiallyMatching(searchFieldText:String, other:String) : boolean
+    - userNameMatchingPredicate(t:User, other:String) : boolean
+}
+ExploreController -- Database
+ExploreController --> SimplePicture : uses
+ExploreController --> Picture : uses
+ExploreController --> User : uses
+
+class ExploreUI extends TabViewWithHeader{
+    - IMAGE_SIZE : int
+    - controller : ExploreController
+    + ExploreUI()
+    - createMainContentPanel() : JPanel
+    - displayImage(imageID:String) : void
+    # createContentPanel() : JPanel
+    - updateImageGrid(username:String, imageGridPanel:JPanel) : void
+}
+ExploreUI -- ExploreController : delegates to
+ExploreUI --> SimplePicture : uses
+ExploreUI --> Picture : uses
+ExploreUI --> User : uses
+
+class HomeController {
+    - relationshipManager : UserRelationshipManager
+    - picDatabase : UpdatableDatabase<Picture>
+    - notificationsDB : Database<Notification>
+    + HomeController(picDatabase:UpdatableDatabase<Picture>, relationshipManager:UserRelationshipManager, notificationsDB:Database<Notification>, usersDB:Database<User>)
+    + HomeController()
+    + getFollowing(username:String) : List<String>
+    + createSampleData() : List<Picture>
+    + getPictureWithId(imageId:String) : Picture
+    + handleLikeAction(imageId:String, likesLabel:JLabel) : void
+    - picPosterMatchingPredicate(t:Picture, poster:String) : boolean
+    - picIDMatchingPredicate(t:Picture, imageId:String) : boolean
+}
+HomeController -- UserRelationshipManager
+HomeController -- UpdatableDatabase
+HomeController -- Database
+HomeController --> Picture : uses
+HomeController --> Notification : uses
+HomeController --> User : uses
+
+interface IAuthenticationService {
+    + registerUser(username:String, bio:String, password:String) : void
+    + loginUser(username:String, password:String) : VerificationResult
+}
+
+class ImageUploadController {
+    - picDatabase : Database<Picture>
+    - uploadedDatabase : Database<SimplePicture>
+    + ImageUploadController(picDatabase:Database<Picture>, uploadedDatabase:Database<SimplePicture>, usersDB:Database<User>)
+    + ImageUploadController()
+    + uploadAction(bioTextAreaText:String) : ImageIcon
+    - saveImageInfo(imageId:String, username:String, bio:String) : void
+}
+ImageUploadController -- Database
+ImageUploadController --> Picture : uses
+ImageUploadController --> SimplePicture : uses
+ImageUploadController --> User : uses
+
+class ImageUploadUI extends TabViewWithHeader {
+    - imagePreviewLabel : JLabel
+    - bioTextArea : JTextArea
+    - uploadButton : JButton
+    - saveButton : JButton
+    - controller : ImageUploadController
+    + ImageUploadUI()
+    + uploadAction(e:ActionEvent) : void
+    - saveBioAction(event:ActionEvent) : void
+    # createContentPanel() : JPanel
+}
+ImageUploadUI -- ImageUploadController : delegates to
+
+interface INavButtonCreator{
+    + {abstract} createNavButtons : List<TabViewNavigationButton>
+}
+
+class InstagramProfileUI extends TabView {
+    - PROFILE_IMAGE_SIZE : int
+    - GRID_IMAGE_SIZE : int
+    - imagePanel : JPanel
+    - upperPanel : JPanel
+    - controller : ProfileController
+    - followersCountLabel : JLabel
+    + InstagramProfileUI(user:User)
+    + InstagramProfileUI()
+    - createHeaderPanel() : JPanel
+    - initializeImageGrid() : void
+    - displayImage(imageIcon:ImageIcon) : void
+    - createStatLabel(number:String, text:String) : JLabel
+    - createStatLabelText(number:String, text:String) : String
+    # createContentPanel() : JPanel
+}
+InstagramProfileUI -- ProfileController : delegates to
+InstagramProfileUI --> User : uses
+
+
+class NavigationBar {
+    - creator : INavButtonCreator
+    + NavigationBar(creator:INavButtonCreator)
+    + displayAllActions() : void
+}
+NavigationBar -- INavButtonCreator : delegates button creation to
+NavigationBar --> TabViewNavigationButton : displays
+
+class Notification {
+    - recieverName : String
+    - transmitterName : String
+    - timeStamp : String
+    - imageID : String
+    + Notification(recieverName:String, transmitterName:String, timeStamp:String)
+    + Notification(recieverName:String, transmitterName:String, timeStamp:String, imageID:String)
+    + getRecieverName() : String
+    + getImageID() : String
+    + getTimeStamp() : String
+    + getTransmitterName() : String
+    + setRecieverName(recieverName:String) : void
+    + setTimeStamp(timeStamp:String) : void
+    + setTransmitterName(transmitterName:String) : void
+}
+
+class NotificationsController extends TabViewController {
+    - notificationDB : Database<Notification>
+    + NotificationsController(notificationDB:Database<Notification>, usersDB:UsersDatabase)
+    + NotificationsController()
+    + getElapsedTime(timestamp:String) : String
+    + getAllNotificationsMessagesForCurrentUser() : List<String>
+    - getAllNotificationsForReciever(recieverUserName:String) : List<Notification>
+    - recieverNameMatchPredicate(t:Notification, recieverUserName:String) : boolean
+}
+NotificationsController -- Database
+NotificationsController --> Notification : uses
+
+class NotificationsDatabase extends Database{
+    + NotificationsDatabase()
+    + retrieveAll() : List<Notification>
+    + save(m: Notification) : boolean
+    # loadPath() : void
+}
+NotificationsDatabase --> Notification : generates
+
+class NotificationsUI extends TabViewWithHeader {
+    - controller : NotificationsController
+    + NotificationsUI()
+    # createContentPanel() : JPanel
+}
+NotificationsUI -- NotificationsController : delegates to 
+NotificationsUI --> Notification : uses
+
+class Picture extends SimplePicture{
+    - caption : String
+    - timeStamp : String
+    - likesCount : int
+    - comments : List<String>
+    + Picture(imageID:String, imagePosterName:String, imagePath:String, caption:String, timeStamp:String, likesCount:int)
+    + addComment(comment:String) : void
+    + like() : void
+    + getCaption() : String
+    + getLikesCount() : int
+    + getComments() : List<String>
+    + getLikeLabel() : String
+    + setLikesCount(likesCount:int) : void
+    + getDataString() : String
+    + getTimeStamp() : String
+}
+
+class PicturesDatabase extends UpdatableDatabase{
+    - databasePath : Path
+    + PicturesDatabase()
+    + retrieveAll() : List<Picture>
+    + update(m:Picture) : boolean
+    # loadPath() : void
+    + save(m:Picture) : boolean
+}
+PicturesDatabase --> Picture : generates
+
+class ProfileController {
+    - relationshipManager : UserRelationshipManager
+    - credDB : Database<User>
+    - picDatabase : Database<Picture>
+    - currentUser : User
+    - uploadedPicsDB : Database<SimplePicture>
+    - profilePicDB : Database<ProfilePhotoData>
+    + ProfileController(user:User)
+    + ProfileController(user:User, relationshipManager:UserRelationshipManager, credDB:Database<User>, userDatabase:Database<User>, picDatabase:Database<Picture>, uploadedPicsDB:Database<SimplePicture>, profilePicDB:Database<ProfilePhotoData>)
+    + getUserWithCompleteData(user:User) : User
+    + getCurrentlyViewedUser() : User
+    + isCurrentUserLoggedInUser() : boolean
+    + isCurrentUserFollowed() : boolean
+    + handleFollowAction() : void
+    + getProfileImages(user:User) : List<ImageIcon>
+    + getCurrentlyViewedUserUsername() : String
+    + getCurrentlyViewedUserProfilePicture() : ImageIcon
+    - picPosterMatchingPredicate(t:Picture, posterName:String) : boolean
+    - userNameMatchingPredicate(t:User, other:User) : boolean
+}
+ProfileController -- UserRelationshipManager
+ProfileController -- Database
+ProfileController --> User : uses
+ProfileController --> Picture : uses
+ProfileController --> SimplePicture : uses
+ProfileController --> ProfilePhotoData : uses
+
+class ProfilePhotoData {
+    - file : File
+    - username : String
+    + ProfilePhotoData(f:File, username:String)
+    + getFile() : File
+    + getUsername() : String
+    + setFile(file:File) : void
+    + setUsername(username:String) : void
+    + getProfilePicturePath() : String
+}
+
+
+class ProfilePhotoDatabase extends Database{
+    - profilePhotoStoragePath : String
+    + ProfilePhotoDatabase()
+    + retrieveAll() : List<ProfilePhotoData>
+    + save(d:ProfilePhotoData) : boolean
+    # loadPath() : void
+}
+ProfilePhotoDatabase --> ProfilePhotoData : generates
+
+class QuakstagramHomeUI extends TabViewWithHeader{
+    - IMAGE_WIDTH : int
+    - IMAGE_HEIGHT : int
+    - LIKE_BUTTON_COLOR : Color
+    - cardLayout : CardLayout
+    - cardPanel : JPanel
+    - homePanel : JPanel
+    - imageViewPanel : JPanel
+    - controller : HomeController
+    + QuakstagramHomeUI()
+    - populateContentPanel(panel:JPanel, pictures:List<Picture>) : void
+    - displayImage(p:Picture) : void
+    - refreshDisplayImage(imageId:String) : void
+    # createContentPanel() : JPanel
+    - createLikeButton(imageId:String, likesLabel:JLabel, isDetailView:boolean) : JButton
+    - loadCroppedImageIcon(imagePath:String, maxWidth:int, maxHeight:int) : ImageIcon
+}
+QuakstagramHomeUI -- HomeController : delegates to
+QuakstagramHomeUI --> Picture : uses
+
+class SignInUI extends AuthenticationView{
+    - txtUsername : JTextField
+    - txtPassword : JTextField
+    - btnSignIn : JButton
+    - btnRegisterNow : JButton
+    + SignInUI()
+    - onSignInClicked(event:ActionEvent) : void
+    - onRegisterNowClicked(event:ActionEvent) : void
+    + main(args:String[]) : void
+    # createActionButton() : JButton
+    # createButtonToNavigateToAlternativeAuthenticationView() : JButton
+    # createInfoFormComponents() : Component[]
+}
+
+class SignUpUI extends AuthenticationView{
+    - txtUsername : JTextField
+    - txtPassword : JTextField
+    - txtBio : JTextField
+    - btnRegister : JButton
+    - btnUploadPhoto : JButton
+    - btnSignIn : JButton
+    + SignUpUI()
+    - onRegisterClicked(event:ActionEvent) : void
+    - handleProfilePictureUpload() : void
+    - openSignInUI() : void
+    + createInfoFormComponents() : Component[]
+    + createActionButton() : JButton
+    + createButtonToNavigateToAlternativeAuthenticationView() : JButton
+}
+
+class SimplePicture {
+    - imagePosterName: String
+    - imagePath: String
+    - imageID: String
+    - originPath: String
+    + SimplePicture(poster: String, path: String, imageID: String)
+    + getImagePath(): String
+    + getImagePosterName(): String
+    + setImagePath(imagePath: String): void
+    + setImagePosterName(imagePosterName: String): void
+    + getImageID(): String
+    + setImageID(imageID: String): void
+    + setOriginPath(originPath: String): void
+    + getOriginPath(): String
+}
+
+class TabView extends JFrame implements INavButtonCreator{
+    - WIDTH : int
+    - HEIGHT : int
+    - controller : TabViewController
+    + TabView(windowTitle : String)
+    + showContentPanel() : void
+    + redrawCommonComponents() : void
+    + removeScreenContents() : void
+    + addCustomComponentNorth(c : Component) : void
+    + addCustomComponentCenter(c : Component) : void
+    + addCustomComponentSouth(c : Component) : void
+    - executeProfileUIAction() : void
+    - executeNotificationsUIAction() : void
+    - executeImageUploadUIAction() : void
+    - executeHomeUIAction() : void
+    - executeExploreUIAction() : void
+    + createNavButtons() : List<TabViewNavigationButton>
+    + createContentPanel() : JPanel {abstract}
+}
+TabView -- TabViewController : delegates to
+TabView --> TabViewNavigationButton : generates
+
+class TabViewController {
+    - userDatabase : Database<User>
+    + TabViewController(userDatabase:Database<User>)
+    + getLoggedInUserName() : String
+    + getLoggedInUser() : User
+}
+TabViewController -- Database
+TabViewController --> User : uses
+
+class TabViewNavigationButton extends JButton{
+    - final {static} NAV_ICON_SIZE : int
+    + TabViewNavigationButton(iconPath : String, action : Runnable)
+}
+
+class TabViewWithHeader extends TabView{
+    - headerTitle : String
+    + TabViewWithHeader(headerTitle:String, windowTitle:String)
+    - createHeaderPanel(headerTitle:String) : JPanel
+    + redrawCommonComponents() : void
+}
+
+class UpdatableDatabase<Model> extends Database {
+    + UpdatableDatabase()
+    + {abstract} update(model:Model) : boolean
+}
+
+class UploadedImagesDatabase extends Database{
+    - imageDir : Path
+    + retrieveAll() : List<SimplePicture>
+    + save(m:SimplePicture) : boolean
+    - getFileExtension(path:String) : String
+    # loadPath() : void
+    - getNextImageId(username:String) : int
+}
+UploadedImagesDatabase --> SimplePicture : generates
+
+class User {
+    - username : String
+    - bio : String
+    - password : String
+    - postsCount : int
+    - followersCount : int
+    - followingCount : int
+    - pictures : List<Picture>
+    + User(username:String, bio:String, password:String)
+    + User(username:String)
+    + addPicture(picture:Picture) : void
+    + getUsername() : String
+    + getBio() : String
+    + setBio(bio:String) : void
+    + getPostsCount() : int
+    + getFollowersCount() : int
+    + getFollowingCount() : int
+    + getPictures() : List<Picture>
+    + setFollowersCount(followersCount:int) : void
+    + setFollowingCount(followingCount:int) : void
+    + setPostCount(postCount:int) : void
+    + toString() : String
+    + getPassword() : String
+}
+
+class UserRelationshipManager {
+    - followersFilePath : String
+    + followUser(follower:String, followed:String) : void
+    + isAlreadyFollowing(follower:String, followed:String) : boolean
+    + getFollowers(username:String) : List<String>
+    + getFollowing(username:String) : List<String>
+}
+
+class UsersDatabase extends Database{
+    - usersFilePath : String
+    + retrieveAll() : List<User>
+    + save(u:User) : boolean
+    + loadPath() : void
+}
+
+UsersDatabase --> User : generates
+
+class VerificationResult {
+    - success : boolean
+    - newUser : User
+    + VerificationResult(success:boolean, newUser:User)
+    + getNewUser() : User
+    + getSuccess() : boolean
+    + setNewUser(newUser:User) : void
+    + setSuccess(success:boolean) : void
+}
+
+
+@enduml
