@@ -31,6 +31,7 @@ CREATE TABLE picture_like (
 CREATE TABLE user_follow (
     user_following VARCHAR(255) NOT NULL,
     user_followed VARCHAR(255) NOT NULL,
+    time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_following) REFERENCES user(ID) ON DELETE CASCADE,
     FOREIGN KEY (user_followed) REFERENCES user(ID) ON DELETE CASCADE,
     CHECK (user_following != user_followed)
