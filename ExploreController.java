@@ -33,8 +33,7 @@ public class ExploreController extends TabViewController {
             while (rs.next()) {
                 String imageId = rs.getString("uploading_user") + "_" + rs.getInt("number");
                 String imagePosterName = rs.getString("uploading_user");
-                String timeUploaded = rs.getTimestamp("time_uploaded").toString();
-                images.add(new SimplePicture(imageId, imagePosterName, timeUploaded));
+                images.add(new SimplePicture(imagePosterName, "img/uploaded/" + imageId + ".png", imageId));
             }
             stmt.close();
             rs.close();
@@ -70,7 +69,7 @@ public class ExploreController extends TabViewController {
              ResultSet rs = statement.executeQuery();
              if(rs.next())
              {
-                p = new Picture(imageId, uploadingUser, "",
+                p = new Picture(imageId, uploadingUser, "img/uploaded/" + imageId + ".png",
                     rs.getString("bio"), rs.getTimestamp("time_uploaded").toString(), rs.getInt("like_count"));
              }
 

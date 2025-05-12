@@ -56,7 +56,7 @@ public class ProfileController extends TabViewController {
         }
         return null;
     }
-    
+
     public User getCurrentlyViewedUser() {
         return currentUser;
     }
@@ -90,6 +90,7 @@ public class ProfileController extends TabViewController {
             stmt.executeUpdate();
             stmt.close();
             c.close();
+            currentUser.setFollowersCount(currentUser.getFollowersCount() + 1);
         }catch(SQLException e)
         {
             e.printStackTrace();

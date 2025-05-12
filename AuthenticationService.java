@@ -6,11 +6,17 @@ class AuthenticationService implements IAuthenticationService {
     public void registerUser(String username, String bio, String password) {
         try {
             Connection connection = DatabaseConnector.getConnection();
-            String query = "INSERT INTO user (ID, bio, password) VALUES (?, ?, ?)";
+            String query = bio.isBlank() ? "INSERT INTO user (ID, password) VALUES (?, ?)" : "INSERT INTO user (ID, bio, password) VALUES (?, ?, ?)";
+
             PreparedStatement preparedStatement = connection.prepareStatement(query);
+            if(!bio.isBlank()){            
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, bio);
-            preparedStatement.setString(3, password);
+            preparedStatement.setString(3, password);}
+            else{
+                preparedStatement.setString(1, username);
+                preparedStatement.setString(2, password);
+            }
             preparedStatement.executeUpdate();
             preparedStatement.close();
             connection.close();
@@ -47,7 +53,7 @@ class AuthenticationService implements IAuthenticationService {
     private void saveUserInformation(User user) {
         try{
             Connection connection = DatabaseConnector.getConnection();
-            String clearingUpdate = "DELETE FROM cu";
+            String clearingUpdate = "DELETE FROM cu"; // ensure only one user is logged in
             Statement clear = connection.createStatement();
             clear.executeUpdate(clearingUpdate);
             String query = "INSERT INTO cu (ID) VALUES (?)";

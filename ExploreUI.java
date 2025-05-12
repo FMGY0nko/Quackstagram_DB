@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
 import java.util.List;
@@ -81,8 +83,14 @@ public class ExploreUI extends TabViewWithHeader {
 
         String timeSincePosting = "Unknown";
         if (!timestampString.isEmpty()) {
-            LocalDateTime timestamp = LocalDateTime.parse(timestampString,
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .optionalStart()
+            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+            .optionalEnd()
+            .toFormatter();
+            
+            LocalDateTime timestamp = LocalDateTime.parse(timestampString, formatter);
             LocalDateTime now = LocalDateTime.now();
             long days = ChronoUnit.DAYS.between(timestamp, now);
             timeSincePosting = days + " day" + (days != 1 ? "s" : "") + " ago";

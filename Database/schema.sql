@@ -1,14 +1,14 @@
--- DROP TABLE IF EXISTS cu;
--- DROP TABLE IF EXISTS user_follow;
--- DROP TABLE IF EXISTS picture_like;
--- DROP TABLE IF EXISTS uploaded_picture;
--- DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS cu;
+DROP TABLE IF EXISTS user_follow;
+ DROP TABLE IF EXISTS picture_like;
+ DROP TABLE IF EXISTS uploaded_picture;
+ DROP TABLE IF EXISTS user;
 
 CREATE TABLE user (
     ID VARCHAR(255) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
-    bio VARCHAR(1000) DEFAULT "No bio",
-    profile_picture VARCHAR(255) DEFAULT "img/default_profile.png"
+    bio VARCHAR(1000) DEFAULT 'No bio',
+    profile_picture VARCHAR(255) DEFAULT 'img/default_profile.png'
 );
 
 -- Used to store user-uploaded pictures
@@ -53,9 +53,9 @@ CREATE TABLE cu (
 -- EXAMPLE INSERT STATEMENTS
 -- user example statements
 INSERT INTO user (ID, password, bio, profile_picture) VALUES
-(1, "rdnpassword", DEFAULT, DEFAULT),
-(2, "anotherpass", "Big fan of the miami dolphins", "tyreek_hill.png"),
-(3, "paswordexample", "Some random example text", DEFAULT);
+(1, 'rdnpassword', DEFAULT, DEFAULT),
+(2, 'anotherpass', 'Big fan of the miami dolphins', 'tyreek_hill.png'),
+(3, 'paswordexample', 'Some random example text', DEFAULT);
 
 -- uploaded_picture example statements
 -- need to ask for clarification for the number

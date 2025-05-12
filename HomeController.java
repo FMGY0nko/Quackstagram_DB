@@ -4,75 +4,132 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.sql.*;
 import javax.swing.JLabel;
 
 public class HomeController extends TabViewController {
-    private UserRelationshipManager relationshipManager;
-    private UpdatableDatabase<Picture> picDatabase;
-    private Database<Notification> notificationsDB;
-    HomeController(UpdatableDatabase<Picture> picDatabase, UserRelationshipManager relationshipManager, Database<Notification> notificationsDB, Database<User> usersDB) {
-        this.relationshipManager = relationshipManager;
-        this.picDatabase = picDatabase;
-        this.notificationsDB = notificationsDB;
-        
+    HomeController() {
     }
 
-    HomeController()
-    {
-        this.notificationsDB = new NotificationsDatabase();
-        this.picDatabase = new PicturesDatabase();
-        this.relationshipManager = new UserRelationshipManager();
-    }
-
-    public List<String> getFollowing(String username) {
+    public List<Picture> createSampleData() {
+        List<Picture> toBeShown = new ArrayList<>();
         try {
-            return relationshipManager.getFollowing(username);
-        } catch (IOException e) {
+            Connection connection = DatabaseConnector.getConnection();
+            String query = """
+                    SELECT u.number, u.uploading_user, u.bio, u.time_uploaded, COUNT(p.liking_user) AS like_count
+                    FROM uploaded_picture u LEFT JOIN picture_like p ON
+                    u.uploading_user = p.uploading_user AND u.number = p.picture_number
+                    WHERE u.uploading_user IN
+                                (SELECT user_followed FROM user_follow WHERE user_following = ?)
+                    GROUP BY
+                        u.uploading_user,
+                        u.number
+
+                    -- yeah i know it changes how the app functions, but it is more intuitive
+                    ORDER BY
+                        u.time_uploaded DESC,
+                        like_count DESC
+                    """;
+
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setString(1, getLoggedInUserName());
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                int pictureNumber = resultSet.getInt("number");
+                String posterName = resultSet.getString("uploading_user");
+                String caption = resultSet.getString("bio");
+                String timestamp = resultSet.getTime("time_uploaded").toString();
+                int likeCount = resultSet.getInt("like_count");
+                String imageID = posterName + "_" + pictureNumber;
+                String imagePath = "img/uploaded/" + imageID + ".png";
+                toBeShown.add(new Picture(imageID, posterName, imagePath, caption, timestamp, likeCount));
+            }
+            statement.close();
+            resultSet.close();
+            connection.close();
+
+        } catch (SQLException e) {
             e.printStackTrace();
+        }
+        return toBeShown;
+    }
+
+    public Picture getPictureWithId(String imageId) {
+        String[] parts = imageId.split("_");
+        String uploadingUser = parts[0];
+        int number = Integer.parseInt(parts[1]);
+        Picture p = null;
+        try{
+            Connection connection = DatabaseConnector.getConnection();
+            String query = """
+            SELECT uploading_user, number, time_uploaded, bio,
+                (SELECT COUNT(*) FROM picture_like WHERE uploading_user = ? AND picture_number = ?) AS like_count
+            FROM uploaded_picture
+            WHERE uploading_user = ? AND number = ?
+             """;
+
+             PreparedStatement statement = connection.prepareStatement(query);
+
+             statement.setString(1, uploadingUser);
+             statement.setInt(2, number);
+             statement.setString(3, uploadingUser);
+             statement.setInt(4, number);
+
+             ResultSet rs = statement.executeQuery();
+             if(rs.next())
+             {
+                p = new Picture(imageId, uploadingUser, "img/uploaded/" + imageId + ".png",
+                    rs.getString("bio"), rs.getTimestamp("time_uploaded").toString(), rs.getInt("like_count"));
+             }
+
+                rs.close();
+                statement.close();
+                connection.close();
+                return p; 
+        }catch (SQLException e) {
+            e.printStackTrace();
+
             return null;
         }
     }
 
-    public List<Picture> createSampleData() {
-        String currentUser = getLoggedInUserName();
-        List<String> followedUsers = getFollowing(currentUser);
-        List<Picture> toBeShown = new ArrayList<>();
-
-        for (String f : followedUsers) {
-            toBeShown.addAll(picDatabase.getMatching(
-                    (t) -> picPosterMatchingPredicate(t, f)));
-        }
-        // TODO: resort the posts however you want, here they are added based on how the
-        // db works
-        return toBeShown;
-    }
-
-    public Picture getPictureWithId(String imageId)
-    {
-        picDatabase = new PicturesDatabase(); //refreshing database cache
-        List<Picture> temp = picDatabase.getMatching((t) -> picIDMatchingPredicate(t, imageId));
-        return temp.getFirst();
-    }
-
     public void handleLikeAction(String imageId, JLabel likesLabel) {
-        Picture p = getPictureWithId(imageId);
-        p.like();
-        boolean updated = picDatabase.update(p);
-        String currentUser = getLoggedInUserName();
-        String imageOwner = p.getImagePosterName();
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        try {
+            Connection connection = DatabaseConnector.getConnection();
+            String query0 = "SELECT COALESCE(MAX(number), 0) FROM picture_like WHERE liking_user = ? AND uploading_user = ? AND picture_number = ?";
+            PreparedStatement stmt0 = connection.prepareStatement(query0);
+            String[] parts = imageId.split("_");
+            String uploadingUser = parts[0];
+            int number = Integer.parseInt(parts[1]);
+            stmt0.setString(1, getLoggedInUserName());
+            stmt0.setString(2, uploadingUser);
+            stmt0.setInt(3, number);
+            ResultSet rs = stmt0.executeQuery();
+            int nextID = 0;
+            if(rs.next())
+            {
+                nextID = 1 + rs.getInt(1);
+            }
+            else{
+                return;
+            }
+            rs.close();
+            stmt0.close();
 
-        if (updated) {
-            likesLabel.setText(p.getLikeLabel());
-            notificationsDB.save(new Notification(imageOwner, currentUser, timestamp, imageId));
-        }
-    }
+            String query = "INSERT INTO picture_like (liking_user, uploading_user, picture_number, number) VALUES (?, ?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
 
-    private boolean picPosterMatchingPredicate(Picture t, String poster) {
-        return t.getImagePosterName().equals(poster);
+            stmt.setString(1, getLoggedInUserName());
+            stmt.setString(2, uploadingUser);
+            stmt.setInt(3, number);
+            stmt.setInt(4, nextID);
+
+            stmt.executeUpdate();
+            likesLabel.setText(String.valueOf(Integer.parseInt(likesLabel.getText().split(":")[1].trim()) + 1));
+            stmt.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
     }
-    private boolean picIDMatchingPredicate(Picture t, String imageId) {
-        return t.getImageID().equals(imageId);
-    }
+}
 }
