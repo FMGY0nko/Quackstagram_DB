@@ -29,7 +29,6 @@ ORDER BY
 CREATE VIEW trending_content AS
 SELECT
     up.uploading_user,
-    u.profile_picture,
     up.bio AS caption,
     COUNT(pl.liking_user) AS total_likes,
     COUNT(pl.liking_user) / DATEDIFF(NOW(), up.time_uploaded) AS likes_per_day,
@@ -49,7 +48,7 @@ LEFT JOIN
 WHERE
     up.time_uploaded > NOW() - INTERVAL 30 DAY
 GROUP BY
-    up.uploading_user, u.profile_picture, up.bio, up.time_uploaded
+    up.uploading_user, up.bio, up.time_uploaded
 HAVING
     COUNT(pl.liking_user) > 0
 ORDER BY
