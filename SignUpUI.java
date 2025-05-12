@@ -29,6 +29,10 @@ public class SignUpUI extends AuthenticationView{
         } else if (username.isEmpty() || password.isEmpty())
         {
             JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+        }else if(username.length() > 255 || password.length() > 255)
+        {
+            // this literally handles all cases of sql input being too long
+            JOptionPane.showMessageDialog(this, "Username and password cannot be longer than 255 characters.", "Error", JOptionPane.ERROR_MESSAGE);
         }
         else {
             controller.saveCredentials(username, password, bio);
