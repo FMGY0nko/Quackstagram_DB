@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Clean and Run SignInUI",
+      "type": "shell",
+      "command": "find . -name \"*.class\" -type f -delete && javac -cp .:/Users/mohammedalzuaa/Downloads/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar SignInUI.java && java -cp .:/Users/mohammedalzuaa/Downloads/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar SignInUI",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "Clean .class files, compile SignInUI.java, and run it."
+    }
+  ]
+}
+

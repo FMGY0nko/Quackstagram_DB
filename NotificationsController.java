@@ -7,12 +7,10 @@ import java.util.List;
 public class NotificationsController extends TabViewController{
     private Database<Notification> notificationDB;
     NotificationsController(Database<Notification> notificationDB, UsersDatabase usersDB) {
-        super(usersDB);
         this.notificationDB = notificationDB;
     }
     NotificationsController()
     {
-        super(new UsersDatabase());
         this.notificationDB = new NotificationsDatabase();
     }
         public String getElapsedTime(String timestamp) {

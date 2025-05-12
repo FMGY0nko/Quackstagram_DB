@@ -1,27 +1,15 @@
 import java.io.File;
-import java.util.List;
-
+import java.sql.*;
 
 public class AuthenticationController {
 
-    private Database<User> credDB;
-    private Database<User> userDB;
-    private Database<ProfilePhotoData> profilePicDB;
     private IAuthenticationService authService;
 
-
-    AuthenticationController(Database<User> credDB, Database<User> userDB, Database<ProfilePhotoData> profilePicDB, IAuthenticationService authService) {
-        this.credDB = credDB;
-        this.userDB = userDB;
-        this.profilePicDB = profilePicDB;
+        AuthenticationController(IAuthenticationService authService) {
         this.authService = authService;
     }
-
     AuthenticationController() {
-        this.credDB = new CredentialsDatabase();
-        this.userDB = new UsersDatabase();
-        this.profilePicDB = new ProfilePhotoDatabase();
-        this.authService = new AuthenticationService(credDB, userDB);
+        this.authService = new AuthenticationService();
     }
 
     public VerificationResult verifyCredentials(String username, String password) {
@@ -29,7 +17,18 @@ public class AuthenticationController {
     }
 
     public void saveProfilePicture(File file, String username) {
-        profilePicDB.save(new ProfilePhotoData(file, username));
+        try{
+            Connection connection = DatabaseConnector.getConnection();
+            String query = "UPDATE user SET profile_picture = ? WHERE ID = ?";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, file.getAbsolutePath());
+            stmt.setString(2, username);
+            stmt.executeUpdate();
+            stmt.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void saveCredentials(String username, String password, String bio) {
@@ -37,12 +36,27 @@ public class AuthenticationController {
     }
 
     public boolean doesUsernameExist(String username) {
-        List<User> matches = credDB.getMatching((t) -> userNamePredicate(t, username));
-        return !(matches.isEmpty());
-    }
+        try{
+            Connection c = DatabaseConnector.getConnection();
+            String query = "SELECT * FROM user WHERE ID = ?";
+            PreparedStatement stmt = c.prepareStatement(query);
+            stmt.setString(1, username); 
+            ResultSet rs = stmt.executeQuery();
 
-
-    private boolean userNamePredicate(User t, String username) {
-        return t.getUsername().equals(username);
+            if(rs.next())
+            {
+                stmt.close();
+                rs.close();
+                c.close();
+                return true;
+            }
+            stmt.close();
+            rs.close();
+            c.close();
+            return false;
+        }catch (SQLException e) {
+            e.printStackTrace();
+            return true; // assume it exists if theres an error
+        }
     }
 }

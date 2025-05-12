@@ -12,7 +12,6 @@ public class HomeController extends TabViewController {
     private UpdatableDatabase<Picture> picDatabase;
     private Database<Notification> notificationsDB;
     HomeController(UpdatableDatabase<Picture> picDatabase, UserRelationshipManager relationshipManager, Database<Notification> notificationsDB, Database<User> usersDB) {
-        super(usersDB);
         this.relationshipManager = relationshipManager;
         this.picDatabase = picDatabase;
         this.notificationsDB = notificationsDB;
@@ -21,7 +20,6 @@ public class HomeController extends TabViewController {
 
     HomeController()
     {
-        super(new UsersDatabase());
         this.notificationsDB = new NotificationsDatabase();
         this.picDatabase = new PicturesDatabase();
         this.relationshipManager = new UserRelationshipManager();

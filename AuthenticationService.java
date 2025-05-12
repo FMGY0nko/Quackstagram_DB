@@ -1,48 +1,63 @@
 import java.util.List;
-
+import java.sql.*;
 class AuthenticationService implements IAuthenticationService {
-    private Database<User> credDB;
-    private Database<User> userDB;
-
-    AuthenticationService(Database<User> credDB, Database<User> userDB) {
-        this.credDB = credDB;
-        this.userDB = userDB;
-    }
 
     @Override
     public void registerUser(String username, String bio, String password) {
-        if(bio.isEmpty())
-        {
-            bio = "No bio";
-        }
-
-        if (!(username.isEmpty()) && !(password.isEmpty()))
-        {
-            User u = new User(username, bio, password);
-            credDB.save(u);
+        try {
+            Connection connection = DatabaseConnector.getConnection();
+            String query = "INSERT INTO user (ID, bio, password) VALUES (?, ?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, bio);
+            preparedStatement.setString(3, password);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public VerificationResult loginUser(String username, String password) {
-        List<User> matches;
-        matches = credDB.getMatching(
-                (t) -> credentialsPredicate(t, username, password));
+        try {
+            Connection connection = DatabaseConnector.getConnection();
+            String query = "SELECT * FROM user WHERE ID = ? AND password = ?";
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
-        if (!(matches.isEmpty())) {
-            User u = matches.getFirst(); // getting first since only one user is going to match the predicate
-            saveUserInformation(u);
-            return new VerificationResult(true, u);
+            if (resultSet.next()) {
+                User u = new User(resultSet.getString("ID"), resultSet.getString("bio"), resultSet.getString("password"));
+                saveUserInformation(u);
+                resultSet.close();
+                preparedStatement.close();
+                connection.close();
+                return new VerificationResult(true, u);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+        System.err.println("Invalid username or password");
         return new VerificationResult(false, null);
     }
 
     private void saveUserInformation(User user) {
-        userDB.save(user);
-    }
-
-    private boolean credentialsPredicate(User t, String username, String password) {
-        return (t.getUsername().equals(username)
-                && t.getPassword().equals(password));
+        try{
+            Connection connection = DatabaseConnector.getConnection();
+            String clearingUpdate = "DELETE FROM cu";
+            Statement clear = connection.createStatement();
+            clear.executeUpdate(clearingUpdate);
+            String query = "INSERT INTO cu (ID) VALUES (?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, user.getUsername());
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

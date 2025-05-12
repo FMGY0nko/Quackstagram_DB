@@ -14,7 +14,7 @@ public abstract class TabView extends JFrame implements INavButtonCreator {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         NavigationBar navigationPanel = new NavigationBar(this);
-        controller = new TabViewController(new UsersDatabase());
+        controller = new TabViewController();
         add(navigationPanel, BorderLayout.SOUTH);
     }
 

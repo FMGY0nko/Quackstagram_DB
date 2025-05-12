@@ -1,9 +1,14 @@
--- Used to store user information
+-- DROP TABLE IF EXISTS cu;
+-- DROP TABLE IF EXISTS user_follow;
+-- DROP TABLE IF EXISTS picture_like;
+-- DROP TABLE IF EXISTS uploaded_picture;
+-- DROP TABLE IF EXISTS user;
+
 CREATE TABLE user (
     ID VARCHAR(255) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
-    bio TEXT DEFAULT "No bio",
-    profile_picture VARCHAR(255) DEFAULT "default_profile.png"
+    bio VARCHAR(1000) DEFAULT "No bio",
+    profile_picture VARCHAR(255) DEFAULT "img/default_profile.png"
 );
 
 -- Used to store user-uploaded pictures
@@ -21,8 +26,9 @@ CREATE TABLE picture_like (
     liking_user VARCHAR(255) NOT NULL,
     uploading_user VARCHAR(255) NOT NULL,
     picture_number INT NOT NULL,
-    number INT NOT NULL NULL PRIMARY KEY,
+    number INT NOT NULL,
     time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (liking_user, uploading_user, picture_number, number),
     FOREIGN KEY (liking_user) REFERENCES user(ID) ON DELETE CASCADE,
     FOREIGN KEY (uploading_user, picture_number) REFERENCES uploaded_picture(uploading_user, number) ON DELETE CASCADE
 );
@@ -32,13 +38,14 @@ CREATE TABLE user_follow (
     user_following VARCHAR(255) NOT NULL,
     user_followed VARCHAR(255) NOT NULL,
     time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_followed, user_following),
     FOREIGN KEY (user_following) REFERENCES user(ID) ON DELETE CASCADE,
     FOREIGN KEY (user_followed) REFERENCES user(ID) ON DELETE CASCADE,
     CHECK (user_following != user_followed)
 );
 
 -- Used to track logged-in users
-CREATE TABLE current_user (
+CREATE TABLE cu (
     ID VARCHAR(255) PRIMARY KEY,
     FOREIGN KEY (ID) REFERENCES user(ID) ON DELETE CASCADE
 );
@@ -64,4 +71,4 @@ INSERT INTO user_follow (user_following, user_followed) VALUES
 (3,1);
 
 -- current_user example
-INSERT INTO current_user (ID) VALUES (1);
+INSERT INTO cu (ID) VALUES (1);
