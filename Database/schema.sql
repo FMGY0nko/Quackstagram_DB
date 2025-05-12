@@ -1,8 +1,8 @@
 DROP TABLE IF EXISTS cu;
 DROP TABLE IF EXISTS user_follow;
- DROP TABLE IF EXISTS picture_like;
- DROP TABLE IF EXISTS uploaded_picture;
- DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS picture_like;
+DROP TABLE IF EXISTS uploaded_picture;
+DROP TABLE IF EXISTS user;
 
 CREATE TABLE user (
     ID VARCHAR(255) PRIMARY KEY,
@@ -53,22 +53,28 @@ CREATE TABLE cu (
 -- EXAMPLE INSERT STATEMENTS
 -- user example statements
 INSERT INTO user (ID, password, bio, profile_picture) VALUES
-(1, 'rdnpassword', DEFAULT, DEFAULT),
-(2, 'anotherpass', 'Big fan of the miami dolphins', 'tyreek_hill.png'),
-(3, 'paswordexample', 'Some random example text', DEFAULT);
+("Lorin", "rdnpassword", DEFAULT, DEFAULT),
+("tyreek", "anotherpass", "Big fan of the miami dolphins", "tyreek_hill.png"),
+("goat", "paswordexample", "Some random example text", DEFAULT);
 
 -- uploaded_picture example statements
--- need to ask for clarification for the number
+INSERT INTO uploaded_picture (uploading_user, number, bio, time_uploaded) VALUES
+("Lorin", 1, "lovely photo of a yugo", DEFAULT),
+("tyreek", 5, "I love the dolphins", DEFAULT),
+("goat", 3, "I too love the dolphins", DEFAULT);
 
 -- picture_like example statements
--- same as before
+INSERT INTO picture_like (liking_user, uploading_user, picture_number, number, time) VALUES
+("tyreek", "goat", 3, 1, DEFAULT),
+("goat", "tyreek", 5, 1, DEFAULT),
+("Lorin", "goat", 3, 1, DEFAULT);
 
 -- user_follow example statements
 INSERT INTO user_follow (user_following, user_followed) VALUES
-(1,2),
-(2,1),
-(3,2),
-(3,1);
+("Lorin","tyreek"),
+("tyreek","Lorin"),
+("goat","tyreek"),
+("goat","Lorin");
 
 -- current_user example
-INSERT INTO cu (ID) VALUES (1);
+INSERT INTO cu (ID) VALUES ("Lorin");
